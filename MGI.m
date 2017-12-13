@@ -1,9 +1,6 @@
-close all;
 clear all;
+close all;
 
-%Définition des données du problème
-
-%l correspond à la longueur du triangle équilatéral représentant le robot
 
 l = 4;
 
