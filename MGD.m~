@@ -66,26 +66,22 @@ p_angle = roots(C);
 
 %On a p_positione phi = 2*atan(t)*180/pi : Calcul des orientations p_positionsibles pour
 %des coordonnees articulaires donnees
-p_angle = 2*atan(p_angle);
+p_angle_phi = atan(p_angle)*2*180/3.14;
 
 for i=1:6
-    
     p_position(i,1) = -(S*(p_joint(3) - p_joint(1) - W) - V*(p_joint(2) - p_joint(1) - Q))/(R*V - S*U);
     p_position(i,2) =  (R*(p_joint(3) - p_joint(1) - W) - U*(p_joint(2) - p_joint(1) - Q))/(R*V - S*U);
     p_position(i,1) = subs( p_position(i,1) ,t, p_angle(i,1));
     p_position(i,2) = subs( p_position(i,2) ,t, p_angle(i,1));
-    
     %Points du triangle
     A(i,1) = p_position(i,1);
-    B(i,1) = p_position(i,1) + T_lengths(2)*cos(p_angle(i,1));
-    C(i,1) = p_position(i,1) + T_lengths(3)*cos(p_angle(i,1)+theta);
+    B(i,1) = p_position(i,1) + T_lengths(2)*cos(p_angle(i,1))-T_points(2,1);
+    C(i,1) = p_position(i,1) + T_lengths(3)*cos(p_angle(i,1)+theta)-T_points(3,1);
     A(i,2) = p_position(i,2);
     B(i,2) = p_position(i,2) + T_lengths(2)*sin(p_angle(i,1));
-    C(i,2) = p_position(i,2) + T_lengths(3)*sin(p_angle(i,1)+theta);
-    
+    C(i,2) = p_position(i,2) +cT_lengths(3)*sin(p_angle(i,1)+theta)-T_points(3,2);
     %Coordonnees du centre de gravite du triangle
     G(i,1)=(A(i,1)+B(i,1)+C(i,1))/3;
     G(i,2)=(A(i,2)+B(i,2)+C(i,2))/3;
     G(i,3)=p_angle(i,1)*180/3.14;
-    
 end
