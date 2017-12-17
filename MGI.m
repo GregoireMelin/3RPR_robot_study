@@ -1,11 +1,9 @@
-% -- MGI -- %
-%  coordonnees globales ---->[ MGI ]-----> coordonnees articulaires
-
 close all;
 clear all;
 
+%  coordonnees globales ---->[ MGI ]-----> coordonnees articulaires
 
-%%Donnees d'entree : coordonnees generales
+%%Donnees d'entree : coordonnees globales
 %Position
 
 %Points du robot lies au sol
@@ -23,8 +21,9 @@ G = [3 ;(-1+-4/3)];
 %Orientation
 %Soit phi, l'orientation de la plateforme
 phi = 0;
-rot_z = [cos(phi) -sin(phi) ; sin(phi) cos(phi)];
+rot_z = [cos(phi) -sin(phi) ; sin(phi) cos(phi)]; %Matrice permettant le changement de repere
 
+%% Calcul des coordonnees articulaires resultantes
 % On calcule les coordonnees des points dans le repere de la plateforme mobile ayant pour origine le
 %centre de gravite (R1) et on calcule ensuite les memes coordonnees dans le repere lie au sol ayant pour
 %origine le point A (R0).

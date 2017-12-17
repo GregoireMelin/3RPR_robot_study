@@ -1,7 +1,7 @@
 %-----------------------------------------------------------------------
 %----------------------Détermination du MGD-----------------------------
 
-%Paramètres d'entrée 
+%Paramètres d'entrée
 
 %Les articulations du robot sont reliés à chaque point du triangle A1A2A3, où A1 se situe à
 %l'origine, et A2 a pour ordonnée zéro. Chaque point de ce triangle est
@@ -44,12 +44,12 @@ W = -2*d3*l3*(sphi*cos(theta)+cphi*sin(theta)) - 2*c3*l3*(cphi*cos(theta)-sphi*s
 
 
 % R1x = -(SA1 - VA2)/(RV - SU)
-% R1y = (RA2 - UA2)/(RV - SU) 
+% R1y = (RA2 - UA2)/(RV - SU)
 % R1x et R1y sont exprimés en fonction de t
 
 
-A1 = p3 - p1 - W; 
-A2 = p2 - p1 - Q; 
+A1 = p3 - p1 - W;
+A2 = p2 - p1 - Q;
 
 finalEq = (S*A1 - V*A2)^2 +(R*A1 - U*A2)^2 -p1*(R*V - S*U)^2;    %les valeurs de t annulant finalEq correspondent aux valeurs de t pouvant être prise par le système avec les données d'entrées fournies
 
@@ -68,27 +68,27 @@ rotz = atan(tValues)*2;      %détermination de l'angle rotz pouvant être pris,
 G(1:6,3) = rotz*180/3.14;  %stockage de la rotation du triangle sur l'axe z en degrée
 
 for i=1:6                          %détermination des coordonnées de R1 R2 R3
-    
+
      R1(i,1) = -(S*A1 - V*A2)/(R*V - S*U);
      R1(i,2) =  (R*A1 - U*A2)/(R*V - S*U);
-    
+
      R1(i,1) = subs(R1(i,1) ,t, tValues(i,1));
      R1(i,2) = subs(R1(i,2) ,t, tValues(i,1));
-     
-     
+
+
      R2(i,1) = R1(i,1) +l2*cos(rotz(i,1));
      R2(i,2) = R1(i,2) +l2*sin(rotz(i,1));
-     
+
      R3(i,1) = R1(i,1) + l3*cos(rotz(i,1)+theta);
      R3(i,2) = R1(i,2) + l3*sin(rotz(i,1)+theta);
-     
+
      %détermination du centre de gravité de R1R2R3
      G(i,1) = (R1(i,1) + R2(i,1) + R3(i,1))/3;
      G(i,2) = (R1(i,2) + R2(i,2) + R3(i,2))/3;
-     
+
 end
 
-%G est la matrice stockant les différentes solutions du MGD 
+%G est la matrice stockant les différentes solutions du MGD
 %Chaque ligne de cette matrice donne une solution au système
 %La première colonne indique la coordonnée en abscisse de chaque point
 %La seconde colonne indique la coordonnée en ordonnée de chaque point
