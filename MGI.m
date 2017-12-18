@@ -40,4 +40,4 @@ E = G + rot_z * E_R1;                                    % % coordonnees de E da
 rho1 = sqrt((A(1,1)-B(1,1))^2 + (A(1,2) - B(2,1))^2); % norme du vecteur AB = rho1
 rho2 = sqrt((C(1,1)-D(1,1))^2 + (C(1,2) - D(2,1))^2); % norme du vecteur CD = rho2
 rho3 = sqrt((F(1,1)-E(1,1))^2 + (F(1,2) - E(2,1))^2);  % norme du vecteur EF = rho3
-joint_coordinates = [rho1,rho2,rho3]; %Longueur des articulations consultable par consultation de la variable joint_coordinates.
+joint_coordinates = [rho1;rho2;rho3]; %Longueur des articulations consultable par consultation de la variable joint_coordinates.

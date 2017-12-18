@@ -93,3 +93,4 @@ end
 %La première colonne indique la coordonnée en abscisse de chaque point
 %La seconde colonne indique la coordonnée en ordonnée de chaque point
 %La troisième colonne indique la rotation sur l'axe z du triangle
+
