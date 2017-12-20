@@ -1,96 +1,125 @@
-%-----------------------------------------------------------------------
-%----------------------Détermination du MGD-----------------------------
+% Fait par : Gregoire MELIN
 
-%Paramètres d'entrée
+clear all;
+close all;
+%  coordonnees articulaires ---->[ MGD ]-----> coordonnees globales
 
-%Les articulations du robot sont reliés à chaque point du triangle A1A2A3, où A1 se situe à
-%l'origine, et A2 a pour ordonnée zéro. Chaque point de ce triangle est
-%relié à un point du triangle R1R2R3, triangle représentant le robot.
+% ------------------------------- %
+% ---- Variables ---------------- %
+% ------------------------------- %
 
-A1 =[0 0];
-A2 = [15.91 0];
-A3 = [0 10];
+%Definition des points A, C et F du schema : Points du robot lies au
+%referentiel lie au sol
+%A=[0 , 0],C = [c2 , 0], F = [c3 , d3]
+c2 = 15.91;
+c3 = 0;
+d3 = 10;
+T_points=[0 0;c2 0;c3 d3];
 
-c2 = A2(1,1);
-c3 = A3(1,1);
-d3 = A3(1,2);
+%Parametres articulaires (mis au carre car toujours utilises au carre dans les equations)
+rho1 = 14.98^2;
+rho2 = 15.38^2;
+rho3 = 12^2;
+p_joint=[rho1 rho2 rho3];
+theta = 0.882603;
 
-l2 = 17.04;        % longueur A1A2
-l3 = 20.84;        %longueur A1A3
-theta = 0.882603;  %angle en radian entre A1A2 et A1A3
+%Longueurs des cotes de la plateforme
+l2 = 17.04;
+l3 = 20.84;
+l1 = l2^2+l3^2 - 2 * l2 * l3 * cos(theta); %AL KASHI
+T_lengths=[l1 l2 l3];
 
+%Necessaire pour un changement de variable pour la resolution
+syms t;
+sinus_phi = (2*t)/(1+t^2);
+cosinus_phi= (1-t^2)/(1+t^2);
 
-p1 = 14.98^2;      %longueur de l'articulation au carré reliant A1 à R1
-p2 = 15.38^2;      %longueur de l'articulation au carré reliant A2 à R2
-p3 = 12^2;         %longueur de l'articulation au carré reliant A3 à R3
+% ------------------------------------------------ %
+% ---- MISE EN PLACE DU MGD ---------------------- %
+% ------------------------------------------------ %
 
-G = zeros(6,3); %La matrice G va stocker la position du centre de gravité du triangle R1R2R3 (position en abscisse au sein de la première colonne, position en ordonnée dans la seconde), ainsi que la rotation en z du triangle (au sein de la troisième colonne) en degrée
+%On exprime rho1, rho2 et rho3 en fonction des longueurs des plateformes
+%On calcule donc les normes des longueurs en fonction des points connus,
+%on a donc :
+%rho1^2=x^2 + y^2;  [1]
+%rho2^2=(x+l2*cos(phi)-c2)^2 + (y+l2*sin(phi))^2;   [2]
+%rho^3=(x+l3*cos(phi+beta)-c3)^2+(y+l3*sin(phi+beta)-d3)^2; [3]
+%En faisant [3] - [1] et [2] - [1] : on obtient le systeme suivant :
+R = 2*l2*cosinus_phi-2*T_points(2,1);
+S = 2*l2*sinus_phi;
+Q = -2*T_points(2,1)*l2*cosinus_phi + l2^2 + T_points(2,1)^2;
+U = 2*l3*(cosinus_phi*cos(theta)-sinus_phi*sin(theta))-2*T_points(3,1);
+V = 2*l3*(sinus_phi*cos(theta)+cosinus_phi*sin(theta)) -2*T_points(3,2);
+W = -2*T_points(3,2)*l3*(sinus_phi*cos(theta)+cosinus_phi*sin(theta)) - 2*T_points(3,1)*l3*(cosinus_phi*cos(theta)-sinus_phi*sin(theta)) + l3^2 + T_points(3,1)^2 + T_points(3,2)^2;
 
-%--------------------------------------------------------------------------
-%------------------------Calcul du MGD-------------------------------------
+%En termes matriciels, on a A*X=B avec A = [ R S; Q V] et B = [-W;-Q] et X [x ; y];
 
-syms t;                 % variable représentant la tangente de la moitié de l'angle de rotation en z du centre de gravité de R1R2R3 (point G)
+eqn_xy = (S*(p_joint(3) - p_joint(1) - W) - V*(p_joint(2) - p_joint(1) - Q))^2 +(R*(p_joint(3) - p_joint(1) - W) - U*(p_joint(2) - p_joint(1) - Q))^2 -p_joint(1)*(R*V - S*U)^2;
+eqn_xy = simplify(eqn_xy);
 
-sphi = (2*t)/(1+t^2);   % variable représentant le sinus de l'angle de rotation en z (angle phi)
-cphi= (1-t^2)/(1+t^2);  % variable représentant le cosinus de l'angle de rotation en z (angle phi)
+% ------------------------------------------------ %
+% ------------- RESOLUTION  ---------------------- %
+% ------------------------------------------------ %
 
-R = 2*l2*cphi-2*c2;
-S = 2*l2*sphi;
-Q = -2*c2*l2*cphi + l2^2 + c2^2;
+%On cherche a annuler le polynome d'ou le fait de n'etudier que son denominateur
+P = numden(eqn_xy);
 
-U = 2*l3*(cphi*cos(theta)-sphi*sin(theta))-2*c3;
-V = 2*l3*(sphi*cos(theta)+cphi*sin(theta)) -2*d3;
-W = -2*d3*l3*(sphi*cos(theta)+cphi*sin(theta)) - 2*c3*l3*(cphi*cos(theta)-sphi*sin(theta)) + l3^2 + c3^2 + d3^2;
+%Mise sous forme de polynome
+C = coeffs(P(1,1));
+C = fliplr(C); % Necessaire pour le calcul des racines avec roots()
 
+%Calcul des racines du polynome
+root_eqn_xy = roots(C);
+%On a p_positione phi = 2*atan(t)*180/pi : Calcul des orientations p_positionsibles pour des coordonnees articulaires donnees
+p_angle = 2*atan(root_eqn_xy);
 
-% R1x = -(SA1 - VA2)/(RV - SU)
-% R1y = (RA2 - UA2)/(RV - SU)
-% R1x et R1y sont exprimés en fonction de t
+%La matrice G contient les 6 solutions potentielles du MGD.
+%La premiere colonne correspond a l'abscisse du centre de gravite, la deuxieme colonne a l'ordonnee
+%Enfin la derniere colonne correspond a l'orientation de la plateforme associee a la position
 
+G = zeros(6,3); %position du centre de gravite de la plateforme
+G(1:6,3)=p_angle;
 
-A1 = p3 - p1 - W;
-A2 = p2 - p1 - Q;
+for i=1:6
+    p_position(i,1) = -(S*(p_joint(3) - p_joint(1) - W) - V*(p_joint(2) - p_joint(1) - Q))/(R*V - S*U);
+    p_position(i,2) =  (R*(p_joint(3) - p_joint(1) - W) - U*(p_joint(2) - p_joint(1) - Q))/(R*V - S*U);
+    p_position(i,1) = subs( p_position(i,1) ,t, root_eqn_xy(i,1));
+    p_position(i,2) = subs( p_position(i,2) ,t, root_eqn_xy(i,1));
 
-finalEq = (S*A1 - V*A2)^2 +(R*A1 - U*A2)^2 -p1*(R*V - S*U)^2;    %les valeurs de t annulant finalEq correspondent aux valeurs de t pouvant être prise par le système avec les données d'entrées fournies
+    %Points du triangle
+    A(i,1) = p_position(i,1);
+    B(i,1) = p_position(i,1) + T_lengths(2)*cos(p_angle(i,1));
+    C(i,1) = p_position(i,1) + T_lengths(3)*cos(p_angle(i,1)+theta);
+    A(i,2) = p_position(i,2);
+    B(i,2) = p_position(i,2) + T_lengths(2)*sin(p_angle(i,1));
+    C(i,2) = p_position(i,2) + T_lengths(3)*sin(p_angle(i,1)+theta);
 
-finalEq = simplify(finalEq);
-
-P = numden(finalEq);     %le polynôme caractéristique du MGD correspond au numérateur obtenu. Il est extrait du quotient par la fonction numden
-
-C = coeffs(P(1,1));      %extraction des coefficient du polynome caractéristique
-
-C = fliplr(C);           %inversion de la matrice (les coefficient du polynome sont inscrit dans le sens croissant de leur monôme correspondant par la fonction coeffs, fliplr permet de placer les coefficient selon un ordre décroissant)
-
-tValues = roots(C);         %détermination des racines du polynome. Ces racines correspond à la valeur de l'angle t pouvant être prise, en radian
-
-rotz = atan(tValues)*2;      %détermination de l'angle rotz pouvant être pris, en radian
-
-G(1:6,3) = rotz*180/3.14;  %stockage de la rotation du triangle sur l'axe z en degrée
-
-for i=1:6                          %détermination des coordonnées de R1 R2 R3
-
-     R1(i,1) = -(S*A1 - V*A2)/(R*V - S*U);
-     R1(i,2) =  (R*A1 - U*A2)/(R*V - S*U);
-
-     R1(i,1) = subs(R1(i,1) ,t, tValues(i,1));
-     R1(i,2) = subs(R1(i,2) ,t, tValues(i,1));
-
-
-     R2(i,1) = R1(i,1) +l2*cos(rotz(i,1));
-     R2(i,2) = R1(i,2) +l2*sin(rotz(i,1));
-
-     R3(i,1) = R1(i,1) + l3*cos(rotz(i,1)+theta);
-     R3(i,2) = R1(i,2) + l3*sin(rotz(i,1)+theta);
-
-     %détermination du centre de gravité de R1R2R3
-     G(i,1) = (R1(i,1) + R2(i,1) + R3(i,1))/3;
-     G(i,2) = (R1(i,2) + R2(i,2) + R3(i,2))/3;
-
+    %Coordonnees du centre de gravite du triangle
+    G(i,1)=(A(i,1)+B(i,1)+C(i,1))/3;
+    G(i,2)=(A(i,2)+B(i,2)+C(i,2))/3;
 end
 
-%G est la matrice stockant les différentes solutions du MGD
-%Chaque ligne de cette matrice donne une solution au système
-%La première colonne indique la coordonnée en abscisse de chaque point
-%La seconde colonne indique la coordonnée en ordonnée de chaque point
-%La troisième colonne indique la rotation sur l'axe z du triangle
+% SORTIES :
+% G (centre de gravité) =
+%             X         Y       theta (rad)
+%           1.3132    6.7128   -0.9870
+%           4.8390   -9.0534   -0.0473
+%           -6.4092    9.2388    0.2453
+%           -7.9756    3.3936    0.5857
+%           15.8347   10.0552    1.0020
+%           4.7551    2.6670    2.1329
 
+% ---------------------------------------------------%
+% ---------- RECHERCHE SINGULARITES (recherche)------%
+% ---------------------------------------------------%
+
+%Calcul des singularites du systeme :
+% A = [ R S ; Q V ];
+% %Les singularites surviennent quand det(A)=0
+% determinant_A = det(A);
+% simplify(determinant_A);
+% P2 = numden(determinant_A);
+% C = coeffs(P2(1,1));
+% C = fliplr(C); % Necessaire pour le calcul des racines avec roots()
+% singularities=roots(C);
+% simplify(singularities); %Les solutions obtenues pour les singularites semblent fausses.
