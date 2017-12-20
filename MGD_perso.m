@@ -1,20 +1,22 @@
-%david.daney@inria.fr
+% Fait par : Gregoire MELIN
 
 clear all;
 close all;
+%  coordonnees articulaires ---->[ MGD ]-----> coordonnees globales
 
 % ------------------------------- %
 % ---- Variables ---------------- %
 % ------------------------------- %
-syms t;
 
-%Definition des points A, C et F du schema
+%Definition des points A, C et F du schema : Points du robot lies au
+%referentiel lie au sol
+%A=[0 , 0],C = [c2 , 0], F = [c3 , d3]
 c2 = 15.91;
 c3 = 0;
 d3 = 10;
 T_points=[0 0;c2 0;c3 d3];
 
-%Parametres articulaires (mis au carre)
+%Parametres articulaires (mis au carre car toujours utilises au carre dans les equations)
 rho1 = 14.98^2;
 rho2 = 15.38^2;
 rho3 = 12^2;
@@ -28,6 +30,7 @@ l1 = l2^2+l3^2 - 2 * l2 * l3 * cos(theta); %AL KASHI
 T_lengths=[l1 l2 l3];
 
 %Necessaire pour un changement de variable pour la resolution
+syms t;
 sinus_phi = (2*t)/(1+t^2);
 cosinus_phi= (1-t^2)/(1+t^2);
 
@@ -36,12 +39,12 @@ cosinus_phi= (1-t^2)/(1+t^2);
 % ------------------------------------------------ %
 
 %On exprime rho1, rho2 et rho3 en fonction des longueurs des plateformes
-
+%On calcule donc les normes des longueurs en fonction des points connus,
+%on a donc :
 %rho1^2=x^2 + y^2;  [1]
 %rho2^2=(x+l2*cos(phi)-c2)^2 + (y+l2*sin(phi))^2;   [2]
 %rho^3=(x+l3*cos(phi+beta)-c3)^2+(y+l3*sin(phi+beta)-d3)^2; [3]
 %En faisant [3] - [1] et [2] - [1] : on obtient le systeme suivant :
-
 R = 2*l2*cosinus_phi-2*T_points(2,1);
 S = 2*l2*sinus_phi;
 Q = -2*T_points(2,1)*l2*cosinus_phi + l2^2 + T_points(2,1)^2;
@@ -49,7 +52,7 @@ U = 2*l3*(cosinus_phi*cos(theta)-sinus_phi*sin(theta))-2*T_points(3,1);
 V = 2*l3*(sinus_phi*cos(theta)+cosinus_phi*sin(theta)) -2*T_points(3,2);
 W = -2*T_points(3,2)*l3*(sinus_phi*cos(theta)+cosinus_phi*sin(theta)) - 2*T_points(3,1)*l3*(cosinus_phi*cos(theta)-sinus_phi*sin(theta)) + l3^2 + T_points(3,1)^2 + T_points(3,2)^2;
 
-%En termes matriciels, on a A*X=B avec A = [ R S; Q V] et B = [-W;-Q];
+%En termes matriciels, on a A*X=B avec A = [ R S; Q V] et B = [-W;-Q] et X [x ; y];
 
 eqn_xy = (S*(p_joint(3) - p_joint(1) - W) - V*(p_joint(2) - p_joint(1) - Q))^2 +(R*(p_joint(3) - p_joint(1) - W) - U*(p_joint(2) - p_joint(1) - Q))^2 -p_joint(1)*(R*V - S*U)^2;
 eqn_xy = simplify(eqn_xy);
@@ -73,15 +76,15 @@ p_angle = 2*atan(root_eqn_xy);
 %La matrice G contient les 6 solutions potentielles du MGD.
 %La premiere colonne correspond a l'abscisse du centre de gravite, la deuxieme colonne a l'ordonnee
 %Enfin la derniere colonne correspond a l'orientation de la plateforme associee a la position
+
 G = zeros(6,3); %position du centre de gravite de la plateforme
 G(1:6,3)=p_angle;
 
 for i=1:6
-
     p_position(i,1) = -(S*(p_joint(3) - p_joint(1) - W) - V*(p_joint(2) - p_joint(1) - Q))/(R*V - S*U);
     p_position(i,2) =  (R*(p_joint(3) - p_joint(1) - W) - U*(p_joint(2) - p_joint(1) - Q))/(R*V - S*U);
-    p_position(i,1) = subs( p_position(i,1) ,t, p_angle(i,1));
-    p_position(i,2) = subs( p_position(i,2) ,t, p_angle(i,1));
+    p_position(i,1) = subs( p_position(i,1) ,t, root_eqn_xy(i,1));
+    p_position(i,2) = subs( p_position(i,2) ,t, root_eqn_xy(i,1));
 
     %Points du triangle
     A(i,1) = p_position(i,1);
@@ -96,13 +99,27 @@ for i=1:6
     G(i,2)=(A(i,2)+B(i,2)+C(i,2))/3;
 end
 
+% SORTIES :
+% G (centre de gravité) =
+%             X         Y       theta (rad)
+%           1.3132    6.7128   -0.9870
+%           4.8390   -9.0534   -0.0473
+%           -6.4092    9.2388    0.2453
+%           -7.9756    3.3936    0.5857
+%           15.8347   10.0552    1.0020
+%           4.7551    2.6670    2.1329
+
+% ---------------------------------------------------%
+% ---------- RECHERCHE SINGULARITES (recherche)------%
+% ---------------------------------------------------%
+
 %Calcul des singularites du systeme :
-A = [ R S; Q V];
-%Les singularites surviennent quand det(A)=0
-determinant_A = det(A);
-simplify(determinant_A);
-P2 = numden(determinant_A);
-C = coeffs(P2(1,1));
-C = fliplr(C); % Necessaire pour le calcul des racines avec roots()
-singularities=roots(C);
-simplify(singularities);
+% A = [ R S ; Q V ];
+% %Les singularites surviennent quand det(A)=0
+% determinant_A = det(A);
+% simplify(determinant_A);
+% P2 = numden(determinant_A);
+% C = coeffs(P2(1,1));
+% C = fliplr(C); % Necessaire pour le calcul des racines avec roots()
+% singularities=roots(C);
+% simplify(singularities); %Les solutions obtenues pour les singularites semblent fausses.
