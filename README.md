@@ -1,7 +1,9 @@
-# 3RPR_robot_study
-Working on 3-RPR Robot
+# 3RPR_robot_study 
+Auteur : Grégoire MELIN, élève de 3ème année de Robotique
 
-sources :
+Date de Rendu : Mercredi
+
+Sources : 20/12/2017
 
 - SOLUTIONS POLYNOMIALES AU PROBLEME DE LA CINEMATIQUE DIRECTE DES MANIPULATEURS PARALLELES PLANS A TROIS DEGRES DE LIBERTE , CLEMENT M. GOSSELIN, JAOUAD SEFRIOUI ET MARC J. RICHARD
 
